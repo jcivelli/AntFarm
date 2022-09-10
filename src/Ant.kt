@@ -71,7 +71,7 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
      *   SE hitting SE corner, will go either N or W)
      */
     private fun reevaluateDirection(coinFlipper: CoinFlip.Flipper) {
-        val cornerOrWallHit = LocationUtils.wallHitTest(terrainModel.dimensions, position) ?: return
+        val cornerOrWallHit = LocationUtils.wallCollisionTest(terrainModel.dimensions, position, direction) ?: return
 
         // Deal with corner cases first.
         if (cornerOrWallHit.isOrdinal()) {  // It's a corner.

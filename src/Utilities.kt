@@ -18,6 +18,9 @@ enum class CoinFlip {
 }
 
 object LocationUtils {
+    /**
+     * Detects if the passed in position is next to a corner or wall and returns its position, null otherwise.
+     */
     fun wallHitTest(dimension : Dimension, position: Point) : Direction? {
         // Test corners first.
         if (position.x == 0 && position.y == 0) {
@@ -48,5 +51,41 @@ object LocationUtils {
         }
 
         return null
+    }
+
+    /**
+     * Returns the position of the wall or corner that will be hit if we move by one step in the specified direction.
+     */
+    fun wallCollisionTest(dimension : Dimension, position: Point, direction : Direction) : Direction? {
+        val wallOrCorner = wallHitTest(dimension, position) ?: return null
+        if (wallOrCorner.isOrdinal()) {
+            // Corner case.
+            val commonDirection = direction.intersect(wallOrCorner)
+            if (commonDirection != null) {
+                // We are hitting the corner or the wall.
+                // Ex: Corner: SW. Direction: SW, S, W, NW, SE.
+                if (commonDirection == direction) {
+                    // We are hitting the corner.
+                    // Ex: Corner: SW. Direction: SW, S, W.
+                    return wallOrCorner
+                } else {
+                    // We are hitting the wall.
+                    // Ex: Corner: SW. Direction: NW (hitting W wall), SE (hitting E wall).
+                    return commonDirection
+                }
+            }
+            return null
+        } else {
+            // Wall case.
+            // Ex: N Valid: N, NE, NW
+            return direction.intersect(wallOrCorner)
+        }
+    }
+
+    /**
+     * Returns a new instance of a point which is the specified point translated by the given values.
+     */
+    fun movePoint(point : Point, x: Int, y: Int) : Point {
+        return Point(point.x + x, point.y + y)
     }
 }
