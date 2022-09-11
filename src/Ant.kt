@@ -26,7 +26,7 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
                     positionChangeListener.directionChanged(previousPosition.direction, direction)
                 }
                 positionChangeListener.positionChanged(previousPosition.position, position)
-            }
+               }
         }
     }
 

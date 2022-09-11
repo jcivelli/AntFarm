@@ -1,9 +1,8 @@
 import org.junit.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.reset
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.*
 import java.awt.Dimension
 import java.awt.Point
+import kotlin.math.min
 
 internal class AntTest {
 
@@ -391,20 +390,116 @@ internal class AntTest {
                 val afterPosition = Point(ant.position.x, if (ant.direction == Direction.SOUTH) ant.position.y - 1 else ant.position.y + 1)
                 ant.move(1, TestFlipper(CoinFlip.TAIL), positionChangeListener)
                 verify(positionChangeListener).positionChanged(beforePosition, afterPosition)
+                verify(positionChangeListener, never()).directionChanged(any(), any())
             }
             ant.position = Point(ant.position.x + 1, ant.position.y)
         }
     }
 
     @Test
-    fun move_noWall_traverseDiagonally() {
+    fun move_noWall_traverseDiagonally_swToNe() {
+        val length = min(terrainModel.dimensions.width, terrainModel.dimensions.height)
+
+        ant.position = Point(0, 0)
+        ant.direction = Direction.NORTH_EAST
+        for (i in 0 until length - 1) {
+            val beforePosition = Point(ant.position)
+            val afterPosition = Point(ant.position.x + 1, ant.position.y + 1)
+            ant.move(1, TestFlipper(CoinFlip.HEAD), positionChangeListener)
+            verify(positionChangeListener).positionChanged(beforePosition, afterPosition)
+            verify(positionChangeListener, never()).directionChanged(any(), any())
+        }
+    }
+
+    @Test
+    fun move_noWall_traverseDiagonally_neToSw() {
+        val length = min(terrainModel.dimensions.width, terrainModel.dimensions.height)
+
+        ant.position = Point(length - 1, length - 1)
+        ant.direction = Direction.SOUTH_WEST
+        for (i in 0 until length - 1) {
+            val beforePosition = Point(ant.position)
+            val afterPosition = Point(ant.position.x - 1, ant.position.y - 1)
+            ant.move(1, TestFlipper(CoinFlip.HEAD), positionChangeListener)
+            verify(positionChangeListener).positionChanged(beforePosition, afterPosition)
+            verify(positionChangeListener, never()).directionChanged(any(), any())
+        }
+    }
+
+    @Test
+    fun move_noWall_traverseDiagonally_nwToSe() {
+        val length = min(terrainModel.dimensions.width, terrainModel.dimensions.height)
+
+        ant.position = Point(0, length - 1)
+        ant.direction = Direction.SOUTH_EAST
+        for (i in 0 until length - 1) {
+            val beforePosition = Point(ant.position)
+            val afterPosition = Point(ant.position.x + 1, ant.position.y - 1)
+            ant.move(1, TestFlipper(CoinFlip.HEAD), positionChangeListener)
+            verify(positionChangeListener).positionChanged(beforePosition, afterPosition)
+            verify(positionChangeListener, never()).directionChanged(any(), any())
+        }
+    }
+
+    @Test
+    fun move_noWall_traverseDiagonally_seToNw() {
+        val length = min(terrainModel.dimensions.width, terrainModel.dimensions.height)
+
+        ant.position = Point(length - 1, 0)
+        ant.direction = Direction.NORTH_WEST
+        for (i in 0 until length - 1) {
+            val beforePosition = Point(ant.position)
+            val afterPosition = Point(ant.position.x - 1, ant.position.y + 1)
+            ant.move(1, TestFlipper(CoinFlip.HEAD), positionChangeListener)
+            verify(positionChangeListener).positionChanged(beforePosition, afterPosition)
+            verify(positionChangeListener, never()).directionChanged(any(), any())
+        }
     }
 
     @Test
     fun move_noWall_multipleSteps() {
+        val expectedPositions  =  arrayOf(
+            Point(0, 0),
+            Point(1, 1),
+            Point(2, 2),
+            Point(3, 3),
+            Point(4, 4),
+            Point(5, 5),
+            )
+
+        ant.position = expectedPositions[0]
+        ant.direction = Direction.NORTH_EAST
+
+        ant.move(5, TestFlipper(CoinFlip.HEAD), positionChangeListener)
+        verify(positionChangeListener).positionChanged(expectedPositions[0], expectedPositions[1])
+        verify(positionChangeListener).positionChanged(expectedPositions[1], expectedPositions[2])
+        verify(positionChangeListener).positionChanged(expectedPositions[2], expectedPositions[3])
+        verify(positionChangeListener).positionChanged(expectedPositions[3], expectedPositions[4])
+        verify(positionChangeListener).positionChanged(expectedPositions[4], expectedPositions[5])
+        verify(positionChangeListener, never()).directionChanged(any(), any())
     }
 
     @Test
     fun move_wall_multipleSteps() {
+        val expectedPositions  =  arrayOf(
+            Point(1, 1),
+            Point(0, 1),
+            Point(0, 0),
+            Point(1, 0),
+            Point(2, 0),
+            Point(3, 0),
+        )
+
+        ant.position = expectedPositions[0]
+        ant.direction = Direction.WEST
+
+        ant.move(5, TestFlipper(CoinFlip.TAIL), positionChangeListener)
+        verify(positionChangeListener).positionChanged(expectedPositions[0], expectedPositions[1])
+        verify(positionChangeListener).positionChanged(expectedPositions[1], expectedPositions[2])
+        verify(positionChangeListener).positionChanged(expectedPositions[2], expectedPositions[3])
+        verify(positionChangeListener).positionChanged(expectedPositions[3], expectedPositions[4])
+        verify(positionChangeListener).positionChanged(expectedPositions[4], expectedPositions[5])
+        verify(positionChangeListener).directionChanged(Direction.WEST, Direction.SOUTH)
+        verify(positionChangeListener).directionChanged(Direction.SOUTH, Direction.EAST)
     }
 }
