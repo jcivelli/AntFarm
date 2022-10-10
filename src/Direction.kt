@@ -1,3 +1,4 @@
+import com.google.common.collect.ImmutableList
 
 enum class Direction {
     NORTH, NORTH_EAST, EAST, SOUTH_EAST, SOUTH, SOUTH_WEST, WEST, NORTH_WEST;
@@ -42,6 +43,36 @@ enum class Direction {
         if (this == SOUTH_WEST) return Pair(SOUTH, WEST)
         if (this == SOUTH_EAST) return Pair(SOUTH, EAST)
         return null
+    }
+
+    /**
+     * Returns a list including this direction and adjacent ones to the specified level.
+     * Ex: NORTH.getAdjacentDirections(2) -> [WEST, NORTH_WEST, NORTH, NORTH_EAST, EAST].
+     */
+    fun getAdjacentDirections(level : Int) : ImmutableList<Direction> {
+        require(level in 0..3)
+
+        if (level == 0) return ImmutableList.of(this)
+
+        val values = values()
+        val index = values.indexOf(this)
+        val startIndex = (index - level).mod(values.size)
+        val stopIndex = (index + level).mod(values.size)
+
+        val result = ImmutableList.builder<Direction>()
+        if (startIndex < stopIndex) {
+            for (i in startIndex .. stopIndex) {
+                result.add(values[i])
+            }
+        } else {
+            for (i in startIndex until values.size) {
+                result.add(values[i])
+            }
+            for (i in 0 .. stopIndex) {
+                result.add(values[i])
+            }
+        }
+        return result.build()
     }
 
     /**

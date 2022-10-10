@@ -1,6 +1,9 @@
+import com.google.common.collect.ImmutableList
 import org.junit.Test
 
 import com.google.common.truth.Truth
+import org.junit.Assert
+import java.lang.IllegalArgumentException
 
 internal class DirectionTest {
     @Test
@@ -85,6 +88,94 @@ internal class DirectionTest {
         Truth.assertThat(Direction.NORTH_EAST.getCardinalComponents()).isEqualTo(Pair(Direction.NORTH, Direction.EAST))
         Truth.assertThat(Direction.SOUTH_EAST.getCardinalComponents()).isEqualTo(Pair(Direction.SOUTH, Direction.EAST))
         Truth.assertThat(Direction.SOUTH_WEST.getCardinalComponents()).isEqualTo(Pair(Direction.SOUTH, Direction.WEST))
+    }
+
+    @Test
+    fun getAdjacentDirections_paramsCheck() {
+        Assert.assertThrows(IllegalArgumentException::class.java) { Direction.NORTH.getAdjacentDirections(-1) }
+        Assert.assertThrows(IllegalArgumentException::class.java) { Direction.NORTH.getAdjacentDirections(4) }
+    }
+
+    @Test
+    fun getAdjacentDirections_north() {
+        Truth.assertThat(Direction.NORTH.getAdjacentDirections(0)).isEqualTo(ImmutableList.of(Direction.NORTH))
+        Truth.assertThat(Direction.NORTH.getAdjacentDirections(1)).isEqualTo(
+            ImmutableList.of(Direction.NORTH_WEST, Direction.NORTH, Direction.NORTH_EAST)
+        )
+        Truth.assertThat(Direction.NORTH.getAdjacentDirections(2)).isEqualTo(
+            ImmutableList.of(
+                Direction.WEST,
+                Direction.NORTH_WEST,
+                Direction.NORTH,
+                Direction.NORTH_EAST,
+                Direction.EAST
+            )
+        )
+        Truth.assertThat(Direction.NORTH.getAdjacentDirections(3)).isEqualTo(
+            ImmutableList.of(
+                Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST, Direction.NORTH,
+                Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST
+            )
+        )
+    }
+
+    @Test
+    fun getAdjacentDirections_southEast() {
+        Truth.assertThat(Direction.SOUTH_EAST.getAdjacentDirections(0))
+            .isEqualTo(ImmutableList.of(Direction.SOUTH_EAST))
+        Truth.assertThat(Direction.SOUTH_EAST.getAdjacentDirections(1)).isEqualTo(
+            ImmutableList.of(Direction.EAST, Direction.SOUTH_EAST, Direction.SOUTH)
+        )
+        Truth.assertThat(Direction.SOUTH_EAST.getAdjacentDirections(2)).isEqualTo(
+            ImmutableList.of(
+                Direction.NORTH_EAST,
+                Direction.EAST,
+                Direction.SOUTH_EAST,
+                Direction.SOUTH,
+                Direction.SOUTH_WEST
+            )
+        )
+        Truth.assertThat(Direction.SOUTH_EAST.getAdjacentDirections(3)).isEqualTo(
+            ImmutableList.of(
+                Direction.NORTH,
+                Direction.NORTH_EAST,
+                Direction.EAST,
+                Direction.SOUTH_EAST,
+                Direction.SOUTH,
+                Direction.SOUTH_WEST,
+                Direction.WEST
+            )
+        )
+    }
+
+    @Test
+    fun getAdjacentDirections_NorthWest() {
+        Truth.assertThat(Direction.NORTH_WEST.getAdjacentDirections(0)).isEqualTo(
+            ImmutableList.of(Direction.NORTH_WEST)
+        )
+        Truth.assertThat(Direction.NORTH_WEST.getAdjacentDirections(1)).isEqualTo(
+            ImmutableList.of(Direction.WEST, Direction.NORTH_WEST, Direction.NORTH)
+        )
+        Truth.assertThat(Direction.NORTH_WEST.getAdjacentDirections(2)).isEqualTo(
+            ImmutableList.of(
+                Direction.SOUTH_WEST,
+                Direction.WEST,
+                Direction.NORTH_WEST,
+                Direction.NORTH,
+                Direction.NORTH_EAST
+            )
+        )
+        Truth.assertThat(Direction.NORTH_WEST.getAdjacentDirections(3)).isEqualTo(
+            ImmutableList.of(
+                Direction.SOUTH,
+                Direction.SOUTH_WEST,
+                Direction.WEST,
+                Direction.NORTH_WEST,
+                Direction.NORTH,
+                Direction.NORTH_EAST,
+                Direction.EAST
+            )
+        )
     }
 
     @Test
@@ -193,24 +284,32 @@ internal class DirectionTest {
     @Test
     fun getOrdinalReflection_horizontal() {
         Truth.assertThat(Direction.NORTH.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.SOUTH)
-        Truth.assertThat(Direction.NORTH_WEST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.SOUTH_WEST)
+        Truth.assertThat(Direction.NORTH_WEST.getOrdinalReflection(Direction.Axis.HORIZONTAL))
+            .isEqualTo(Direction.SOUTH_WEST)
         Truth.assertThat(Direction.WEST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.WEST)
-        Truth.assertThat(Direction.SOUTH_WEST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.NORTH_WEST)
+        Truth.assertThat(Direction.SOUTH_WEST.getOrdinalReflection(Direction.Axis.HORIZONTAL))
+            .isEqualTo(Direction.NORTH_WEST)
         Truth.assertThat(Direction.SOUTH.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.NORTH)
-        Truth.assertThat(Direction.SOUTH_EAST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.NORTH_EAST)
+        Truth.assertThat(Direction.SOUTH_EAST.getOrdinalReflection(Direction.Axis.HORIZONTAL))
+            .isEqualTo(Direction.NORTH_EAST)
         Truth.assertThat(Direction.EAST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.EAST)
-        Truth.assertThat(Direction.NORTH_EAST.getOrdinalReflection(Direction.Axis.HORIZONTAL)).isEqualTo(Direction.SOUTH_EAST)
+        Truth.assertThat(Direction.NORTH_EAST.getOrdinalReflection(Direction.Axis.HORIZONTAL))
+            .isEqualTo(Direction.SOUTH_EAST)
     }
 
     @Test
     fun getOrdinalReflection_vertical() {
         Truth.assertThat(Direction.NORTH.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.NORTH)
-        Truth.assertThat(Direction.NORTH_WEST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.NORTH_EAST)
+        Truth.assertThat(Direction.NORTH_WEST.getOrdinalReflection(Direction.Axis.VERTICAL))
+            .isEqualTo(Direction.NORTH_EAST)
         Truth.assertThat(Direction.WEST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.EAST)
-        Truth.assertThat(Direction.SOUTH_WEST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.SOUTH_EAST)
+        Truth.assertThat(Direction.SOUTH_WEST.getOrdinalReflection(Direction.Axis.VERTICAL))
+            .isEqualTo(Direction.SOUTH_EAST)
         Truth.assertThat(Direction.SOUTH.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.SOUTH)
-        Truth.assertThat(Direction.SOUTH_EAST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.SOUTH_WEST)
+        Truth.assertThat(Direction.SOUTH_EAST.getOrdinalReflection(Direction.Axis.VERTICAL))
+            .isEqualTo(Direction.SOUTH_WEST)
         Truth.assertThat(Direction.EAST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.WEST)
-        Truth.assertThat(Direction.NORTH_EAST.getOrdinalReflection(Direction.Axis.VERTICAL)).isEqualTo(Direction.NORTH_WEST)
+        Truth.assertThat(Direction.NORTH_EAST.getOrdinalReflection(Direction.Axis.VERTICAL))
+            .isEqualTo(Direction.NORTH_WEST)
     }
 }

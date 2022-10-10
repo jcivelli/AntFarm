@@ -1,7 +1,12 @@
 import java.awt.Point
 import java.lang.IllegalStateException
+import kotlin.random.Random
 
-class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
+class Ant(
+    val id: Int = -1,
+    private val terrainModel: TerrainModel,
+    private val behavior: AntBehavior =  object : AntBehavior {}) {
+
     interface PositionListener {
         fun positionChanged(oldPosition: Point, newPosition: Point)
         fun directionChanged(oldDirection: Direction, newDirection: Direction)
@@ -11,34 +16,19 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
 
     var position: Point = Point()
     var direction: Direction = Direction.NORTH
-    private val previousPositions: MutableList<PositionDirection> = ArrayList()
 
-    /**
-     * Moves this ant by the specified number of steps. The ant's direction may change if the ant hits a wall.
-     */
-    fun move(numOfSteps: Int, coinFlipper: CoinFlip.Flipper, positionChangeListener: PositionListener? = null) {
-        var steps = numOfSteps
-        while (steps-- > 0) {
-            moveByOne(coinFlipper)
-            if (positionChangeListener != null) {
-                val previousPosition = previousPositions.last()
-                if (previousPosition.direction != direction) {
-                    positionChangeListener.directionChanged(previousPosition.direction, direction)
-                }
-                positionChangeListener.positionChanged(previousPosition.position, position)
-               }
-        }
-    }
+    private var moveSinceLastDirectionReEval = 0
+    private val previousPositions: MutableList<PositionDirection> = ArrayList()
 
     /**
      * Moves the ant by one square in its current direction. If it hits a wall changes direction randomly and returns
      * the new direction.
      */
-    private fun moveByOne(coinFlipper: CoinFlip.Flipper) {
+    fun move(random: Random, positionChangeListener: PositionListener? = null) {
         previousPositions.add(PositionDirection(position, direction))
 
-        // Change the direction if we hit a wall.
-        reevaluateDirection(coinFlipper)
+        // Change the direction if we hit a wall or have gone in a straight line for too long.
+        reevaluateDirection(random)
 
         // Then advance 1 step.
         val newX = if (direction.isEastBound()) {
@@ -57,6 +47,39 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
             position.y
         }
         position = Point(newX, newY)
+
+        if (positionChangeListener != null) {
+            val previousPosition = previousPositions.last()
+            if (previousPosition.direction != direction) {
+                positionChangeListener.directionChanged(previousPosition.direction, direction)
+            }
+            positionChangeListener.positionChanged(previousPosition.position, position)
+        }
+    }
+
+    private fun reevaluateDirection(random: Random) {
+        val directionBefore = direction
+
+        if (!reevaluateDirectionForCollision(random)) {
+            // We didn't hit a wall. Consider changing direction if we have been travelling in that direction for some
+            // time.
+            if (moveSinceLastDirectionReEval == behavior.getTravelSegmentLength()) {
+                var directions = behavior.getPotentialDirectionChange(direction)
+                val cornerOrWall = LocationUtils.wallHitTest(terrainModel.dimensions, position)
+                if (cornerOrWall != null) {
+                    directions = intersectDirections(cornerOrWall, directions)
+                }
+                direction = directions[random.nextInt(directions.size)]
+                moveSinceLastDirectionReEval = 0
+                return
+            }
+        }
+
+        if (direction != directionBefore) {
+            moveSinceLastDirectionReEval = 0
+        } else {
+            moveSinceLastDirectionReEval++
+        }
     }
 
     /*
@@ -69,9 +92,11 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
      * - when hitting a corner, if it was already following a wall, it continues against the other wall (ex: going N
      *   hitting NW corner, will go E), if coming at an angle, it will continue following any of the 2 walls (ex: going
      *   SE hitting SE corner, will go either N or W)
+     * @return true the direction changed false otherwise.
      */
-    private fun reevaluateDirection(coinFlipper: CoinFlip.Flipper) {
-        val cornerOrWallHit = LocationUtils.wallCollisionTest(terrainModel.dimensions, position, direction) ?: return
+    private fun reevaluateDirectionForCollision(random: Random): Boolean {
+        val cornerOrWallHit =
+            LocationUtils.wallCollisionTest(terrainModel.dimensions, position, direction) ?: return false
 
         // Deal with corner cases first.
         if (cornerOrWallHit.isOrdinal()) {  // It's a corner.
@@ -83,7 +108,7 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
                 // |^      ->     |>
                 // |              |
                 direction = cornerOrWallHit.differenceCardinalOrdinal(direction)?.getOpposite()
-                        ?: throw IllegalStateException()
+                    ?: throw IllegalStateException()
             } else {
                 // We are hitting the corner at a 45-degree angle.
                 // Follow any of the wall.
@@ -92,9 +117,10 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
                 // | \          ->       | ->        or   ||
                 // |                     |                |v
                 val candidateDirections = cornerOrWallHit.getCardinalComponents()
-                direction = (if (coinFlipper.toss() == CoinFlip.HEAD) candidateDirections!!.first else candidateDirections!!.second).getOpposite()
+                direction =
+                    (if (random.nextBoolean()) candidateDirections!!.first else candidateDirections!!.second).getOpposite()
             }
-            return
+            return true
         }
 
         // Wall case.
@@ -104,8 +130,8 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
             // ------                ------          ------
             //   ^         ->           <        or     >
             val candidateDirections = direction.getOtherAxisDirections()
-            direction = if (coinFlipper.toss() == CoinFlip.HEAD) candidateDirections!!.first else candidateDirections!!.second
-            return
+            direction = if (random.nextBoolean()) candidateDirections!!.first else candidateDirections!!.second
+            return true
         } else {
             // We are hitting the wall at a 45-degree angle.
             // Either bounce back at a 45-degree or follow the wall.
@@ -113,7 +139,17 @@ class Ant(val id: Int = -1, private val terrainModel: TerrainModel) {
             // -------               -------          -------
             //    \          ->        /        or       <
             val axis = Direction.Axis.getAxis(cornerOrWallHit)!!.getOpposite()
-            direction = if (coinFlipper.toss() == CoinFlip.HEAD) direction.differenceCardinalOrdinal(cornerOrWallHit) ?: throw IllegalStateException() else direction.getOrdinalReflection(axis)
+            direction = if (random.nextBoolean()) direction.differenceCardinalOrdinal(cornerOrWallHit)
+                ?: throw IllegalStateException() else direction.getOrdinalReflection(axis)
+            return true
+        }
+        return false
+    }
+
+    private fun intersectDirections(direction: Direction, otherDirections: List<Direction>)
+        : List<Direction> {
+        return otherDirections.filter {
+            direction.intersect(it) == null
         }
     }
 }

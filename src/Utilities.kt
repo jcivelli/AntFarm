@@ -54,7 +54,8 @@ object LocationUtils {
     }
 
     /**
-     * Returns the position of the wall or corner that will be hit if we move by one step in the specified direction.
+     * Returns the position of the wall or corner that will be hit if we move by one step in the specified direction,
+     * null if no wall will be hit.
      */
     fun wallCollisionTest(dimension : Dimension, position: Point, direction : Direction) : Direction? {
         val wallOrCorner = wallHitTest(dimension, position) ?: return null
