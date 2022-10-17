@@ -4,7 +4,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import javax.imageio.ImageIO
 import javax.swing.*
-
+import kotlin.math.floor
 
 class AntFarm {
     private val frame = JFrame("Ant Farm")
@@ -94,6 +94,7 @@ interface TerrainModel {
     val dimensions: Dimension
     val nestPosition: Point
     val ants: List<Ant>
+    val scentMap : ScentMap
 }
 
 class Terrain(private val model: TerrainModel) : JPanel() {
@@ -132,6 +133,9 @@ class Terrain(private val model: TerrainModel) : JPanel() {
         g2.color = backgroundColor
         g2.fillRect(g2.clipBounds.x, g2.clipBounds.y, g2.clipBounds.width, g2.clipBounds.height)
 
+        // Draw the scent.
+        drawCells(g2, model.scentMap)
+
         drawGrid(g2, model.dimensions)
 
         drawImageInCell(g2, antHillImage, model.nestPosition)
@@ -143,7 +147,7 @@ class Terrain(private val model: TerrainModel) : JPanel() {
         }
     }
 
-    fun drawGrid(g: Graphics2D, dimensions: Dimension) {
+    private fun drawGrid(g: Graphics2D, dimensions: Dimension) {
         // TODO: don't draw out of the clip rect.
         g.color = gridColor
         for (i in 0..dimensions.width) {
@@ -156,7 +160,19 @@ class Terrain(private val model: TerrainModel) : JPanel() {
         }
     }
 
-    fun drawVerticalDotedLine(g: Graphics2D, x: Int, y1: Int, y2: Int) {
+    private fun drawCells(g: Graphics2D, scentMap: ScentMap) {
+        for ((x, scentColumn) in scentMap.withIndex()) {
+            for ((y, scentList) in scentColumn.withIndex()) {
+                for (scent in scentList) {
+                    g.color = getScentColor(scent)
+                    val cellPositionSwing = toSwingCoordinates(x, y, model.dimensions)
+                    g.fillRect(cellPositionSwing.x, cellPositionSwing.y - cellSize, cellSize, cellSize)
+                }
+            }
+        }
+    }
+
+    private fun drawVerticalDotedLine(g: Graphics2D, x: Int, y1: Int, y2: Int) {
         for (i in y1..y2 step dottedLineDotSize * 2) {
             g.drawLine(x, i, x, i + dottedLineDotSize)
         }
@@ -208,11 +224,18 @@ class Terrain(private val model: TerrainModel) : JPanel() {
             Direction.NORTH_WEST -> Math.toRadians(315.0)
         }
     }
+
+    private fun getScentColor(scent : Scent) : Color {
+        // TODO: create different color based on the scent ID.
+        val alpha : Int = floor(scent.intensity.toFloat() / Scent.MAX_INTENSITY * 150).toInt()
+        return Color(255, 255, 0, alpha)
+    }
 }
 
 class TerrainModelImpl(override val dimensions: Dimension) : TerrainModel {
     override val ants: List<Ant> = ImmutableList.of(Ant(1, this))
     override val nestPosition = Point(0, 0)
+    override val scentMap = createEmptyScentMap(dimensions.width, dimensions.height)
 
     fun reset() {
         for (ant in ants) {

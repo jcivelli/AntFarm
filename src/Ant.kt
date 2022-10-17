@@ -57,6 +57,9 @@ class Ant(
         }
     }
 
+    fun markCell() : Scent {
+        return Scent(id)
+    }
     private fun reevaluateDirection(random: Random) {
         val directionBefore = direction
 
@@ -143,7 +146,6 @@ class Ant(
                 ?: throw IllegalStateException() else direction.getOrdinalReflection(axis)
             return true
         }
-        return false
     }
 
     private fun intersectDirections(direction: Direction, otherDirections: List<Direction>)

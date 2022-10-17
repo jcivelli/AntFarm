@@ -11,6 +11,8 @@ internal class AntTest {
         override val dimensions = Dimension(30, 40)
         override val nestPosition = Point(0, 0)
         override val ants = emptyList<Ant>()
+        override val scentMap: ScentMap
+            get() = TODO("Not yet implemented")
     }
 
     private val neCorner = Point(terrainModel.dimensions.width - 1, terrainModel.dimensions.height - 1)

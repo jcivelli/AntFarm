@@ -53,6 +53,7 @@ class SessionRunner(private val model: TerrainModel, var speed : Speed = Speed.R
         }
 
         val before = System.currentTimeMillis()
+        updateScents(model.scentMap)
         moveAnts(model.ants)
 
         val delay = 0L.coerceAtLeast(speed.periodMs - (System.currentTimeMillis() - before))
@@ -63,7 +64,7 @@ class SessionRunner(private val model: TerrainModel, var speed : Speed = Speed.R
 
     private fun moveAnts(ants : List<Ant>) {
         for (ant in ants) {
-            println("Move ants was at ${ant.position}")
+//           println("Move ants was at ${ant.position}")
             ant.move(Random.Default, object: Ant.PositionListener {
                 override fun positionChanged(oldPosition: Point, newPosition: Point) {
                     listener.shouldRepaint()
@@ -73,6 +74,25 @@ class SessionRunner(private val model: TerrainModel, var speed : Speed = Speed.R
                     listener.shouldRepaint()
                 }
             })
+//            println("Now at ${ant.position}")
+
+            val newScent = ant.markCell()
+            // Replace any existing scent we had on this cell.
+            val scents = model.scentMap[ant.position.x][ant.position.y]
+            scents.removeIf { it.id == ant.id }
+            scents.add(newScent)
         }
+    }
+
+    private fun updateScents(scentMap: ScentMap) {
+        scentMap.flatten().forEach { scents ->  updateScentsInList(scents)}
+    }
+
+    private fun updateScentsInList(scents : MutableList<Scent>) {
+        if (scents.isEmpty()) {
+            return
+        }
+        scents.replaceAll { scent -> scent.degrade() }
+        scents.removeIf { scent -> scent.isDepleted() }
     }
 }
